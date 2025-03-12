@@ -11,6 +11,7 @@ import {
   updateAchievements,
   getNextDay
 } from '../utils/storage';
+import { notificationService } from '../utils/notifications';
 
 /**
  * Custom hook to manage workout progress state
@@ -202,6 +203,15 @@ export function useWorkoutProgress() {
     setProgress(updatedProgress);
     setCurrentDay(nextDayData);
     saveUserProgress(updatedProgress);
+    
+    // Send a notification for completing a day
+    notificationService.sendCustomNotification(
+      'Day Completed! 🎉',
+      {
+        body: `Great job completing Day ${currentDay.day}! You've done ${currentDay.actual} push-ups today.`,
+        requireInteraction: true
+      }
+    );
     
     // Only check for new achievements when moving to the next day
     checkForNewAchievements(updatedProgress);

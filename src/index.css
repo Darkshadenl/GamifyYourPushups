@@ -85,12 +85,8 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #f3f4f6;
   cursor: pointer;
   transition: all 0.2s ease;
-}
-button:hover {
-  background-color: #e5e7eb;
 }
 button:focus,
 button:focus-visible {
