@@ -107,7 +107,6 @@ export function WorkoutDay({
                 )}
               </div>
             </label>
-            <span className="text-xs text-gray-500 mt-1">Uncheck resets to 0</span>
           </div>
         </div>
       </div>
