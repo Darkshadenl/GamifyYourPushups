@@ -37,10 +37,35 @@ class NotificationService {
   }
 
   /**
+   * Check if the device is running iOS
+   */
+  isIOS(): boolean {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  }
+
+  /**
+   * Check if the app is running in standalone mode (installed as PWA)
+   */
+  isStandalone(): boolean {
+    return window.matchMedia('(display-mode: standalone)').matches || 
+           (window.navigator as any).standalone === true
+  }
+
+  /**
    * Check if browser supports notifications
    */
   supportsNotifications(): boolean {
-    return 'Notification' in window
+    // Standard web notifications support
+    const hasNotificationAPI = 'Notification' in window
+    
+    // For iOS, we'll consider it "supported" if it's installed as a PWA
+    // This is because iOS only supports notifications through PWAs
+    if (this.isIOS()) {
+      return this.isStandalone() || hasNotificationAPI
+    }
+    
+    return hasNotificationAPI
   }
 
   /**
@@ -77,25 +102,35 @@ class NotificationService {
    * Initialize the notification service
    */
   async initialize(): Promise<boolean> {
-    if (!this.supportsNotifications()) {
+    // For iOS, we'll allow settings to be configured even if notifications
+    // aren't fully supported in the current context
+    if (!this.supportsNotifications() && !this.isIOS()) {
       console.warn('Browser does not support notifications')
       return false
     }
 
     // Only request permission if not already granted or denied
-    if (Notification.permission === 'default') {
-      this.permission = await Notification.requestPermission()
-    } else {
-      this.permission = Notification.permission
+    // and if the Notification API is available
+    if ('Notification' in window) {
+      if (Notification.permission === 'default') {
+        this.permission = await Notification.requestPermission()
+      } else {
+        this.permission = Notification.permission
+      }
+    } else if (this.isIOS()) {
+      // For iOS without Notification API, we'll set a default permission
+      // This allows the UI to still work even though actual notifications won't
+      this.permission = 'default'
     }
 
-    if (this.permission !== 'granted') {
+    if (this.permission !== 'granted' && !this.isIOS()) {
       console.warn('Notification permission not granted')
       return false
     }
 
     // Start checking for notifications if streak reminders are enabled
-    if (this.settings.streakEnabled) {
+    // and if we're not on iOS (since iOS notifications work differently)
+    if (this.settings.streakEnabled && !this.isIOS()) {
       this.checkInterval = window.setInterval(() => {
         this.checkNotifications()
       }, 60_000) // Check every minute
@@ -140,8 +175,8 @@ class NotificationService {
     
     new Notification('Push-up Journey Reminder', {
       body: 'Don\'t forget to complete your daily push-ups!',
-      icon: '/public/vite.svg',
-      badge: '/public/vite.svg',
+      icon: '/vite.svg',
+      badge: '/vite.svg',
       requireInteraction: true
     })
   }
@@ -154,8 +189,8 @@ class NotificationService {
     
     new Notification(`Achievement Unlocked: ${title}`, {
       body: description,
-      icon: '/public/vite.svg',
-      badge: '/public/vite.svg',
+      icon: '/vite.svg',
+      badge: '/vite.svg',
       requireInteraction: true
     })
   }
@@ -167,8 +202,8 @@ class NotificationService {
     if (this.permission !== 'granted') return
     
     new Notification(title, {
-      icon: '/public/vite.svg',
-      badge: '/public/vite.svg',
+      icon: '/vite.svg',
+      badge: '/vite.svg',
       ...options
     })
   }
