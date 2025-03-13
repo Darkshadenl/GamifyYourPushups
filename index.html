@@ -9,11 +9,92 @@
     <meta name="description" content="Track your push-up progress and achieve your fitness goals" />
     <link rel="manifest" href="/manifest.json" />
     <title>Push-up Journey</title>
+    <style>
+      /* Fallback styles in case CSS doesn't load */
+      .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        text-align: center;
+        padding: 0 20px;
+      }
+      .loading-spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #4f46e5;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .error-container {
+        display: none;
+        background-color: #ffeeee;
+        border: 1px solid #ff0000;
+        border-radius: 5px;
+        padding: 20px;
+        margin-top: 20px;
+        max-width: 500px;
+        text-align: left;
+      }
+      .error-title {
+        color: #ff0000;
+        margin-top: 0;
+      }
+      .error-message {
+        margin-bottom: 10px;
+      }
+      .error-stack {
+        white-space: pre-wrap;
+        overflow: auto;
+        max-height: 200px;
+        background-color: #f8f8f8;
+        padding: 10px;
+        border-radius: 3px;
+        font-family: monospace;
+        font-size: 12px;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Fallback content that will be replaced by React -->
+      <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <h2>Loading Push-up Journey...</h2>
+        <p>If this message persists, please make sure JavaScript is enabled in your browser.</p>
+        <div id="error-display" class="error-container">
+          <h3 class="error-title">Error Loading App</h3>
+          <p id="error-message" class="error-message">An unknown error occurred.</p>
+          <div id="error-stack" class="error-stack"></div>
+        </div>
+      </div>
+    </div>
+    <script>
+      // Handle script loading errors
+      window.addEventListener('error', function(event) {
+        console.error('Script error:', event);
+        var errorDisplay = document.getElementById('error-display');
+        var errorMessage = document.getElementById('error-message');
+        var errorStack = document.getElementById('error-stack');
+        
+        if (errorDisplay && errorMessage && errorStack) {
+          errorDisplay.style.display = 'block';
+          errorMessage.textContent = event.message || 'Failed to load the application.';
+          errorStack.textContent = event.error ? event.error.stack : '';
+        }
+      });
+    </script>
     <script type="module" src="/src/main.jsx"></script>
     <script>
+      // Service worker registration with better error handling
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/service-worker.js')
@@ -22,6 +103,7 @@
             })
             .catch(error => {
               console.error('Service Worker registration failed:', error);
+              // Service worker failure shouldn't prevent the app from working
             });
         });
       }
