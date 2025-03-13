@@ -57,7 +57,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 pb-10">
       <Header streak={progress.streak} level={progress.level} />
-      
+
       <main className="container mx-auto px-4 py-8">
         <div className="mb-6 max-w-md mx-auto">
           <div className="flex items-center justify-between mb-2">
@@ -79,12 +79,12 @@ function App() {
               </button>
             </div>
           </div>
-          <ProgressBar 
-            progress={progress.levelProgress} 
-            color="bg-gradient-to-r from-indigo-500 to-purple-500" 
+          <ProgressBar
+            progress={progress.levelProgress}
+            color="bg-gradient-to-r from-indigo-500 to-purple-500"
           />
         </div>
-        
+
         {showNotificationSettings ? (
           <div className="max-w-md mx-auto">
             <NotificationSettings />
@@ -98,7 +98,7 @@ function App() {
         ) : (
           <>
             {currentDay && (
-              <WorkoutDay 
+              <WorkoutDay
                 day={currentDay}
                 onUpdateCount={updatePushupCount}
                 onToggleCompleted={toggleDayCompleted}
@@ -106,7 +106,7 @@ function App() {
                 onMoveToNext={moveToNextDay}
               />
             )}
-            
+
             {!isDev && currentDay?.completed && (
               <div className="max-w-md mx-auto mt-4 mb-2 p-4 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-800 shadow-sm">
                 <div className="flex items-center">
@@ -117,7 +117,7 @@ function App() {
                 </div>
               </div>
             )}
-            
+
             <div className="max-w-md mx-auto mt-4 mb-2 p-4 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-800 shadow-sm">
               <div className="flex items-center">
                 <span className="text-xl mr-2">ℹ️</span>
@@ -126,20 +126,36 @@ function App() {
                 </p>
               </div>
             </div>
-            
-            <Achievements 
-              achievements={achievements} 
-              newlyUnlocked={newlyUnlockedAchievement} 
+
+            <div className="max-w-md mx-auto mt-4 mb-2 p-4 bg-blue-50 border border-blue-200 rounded-md text-sm text-blue-800 shadow-sm">
+              <div className="flex items-start">
+                <span className="text-xl mr-2">🔥</span>
+                <div>
+                  <p className="font-medium mb-1">Streak System</p>
+                  <ul className="list-disc ml-5 space-y-1">
+                    <li>Each completed day earns you one streak charge (🃏)</li>
+                    <li>If you miss a day, a streak charge is automatically used</li>
+                    <li>If you have no streak charges left, your streak resets to 0</li>
+                    <li>Your level stays the same, but level progress resets to 0%</li>
+                    <li>The Weekly Warrior achievement requires an active 7-day streak</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <Achievements
+              achievements={achievements}
+              newlyUnlocked={newlyUnlockedAchievement}
             />
-            
-            <DayHistory 
+
+            <DayHistory
               days={progress.days}
               currentDayNumber={progress.currentDay}
               onSelectDay={navigateToDay}
             />
-            
-            <DataManagement 
-              onDataImported={handleDataImported} 
+
+            <DataManagement
+              onDataImported={handleDataImported}
               onDataReset={handleDataReset}
             />
           </>

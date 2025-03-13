@@ -131,10 +131,9 @@ export function updateAchievements(progress: UserProgress): Achievement[] {
     updatedAchievements[0].unlocked = true;
   }
   
-  // Weekly warrior achievement
-  if (progress.streak >= 7) {
-    updatedAchievements[1].unlocked = true;
-  }
+  // Weekly warrior achievement - requires current streak of 7 or more
+  // This will be reset if streak is broken
+  updatedAchievements[1].unlocked = progress.streak >= 7;
   
   // Level up achievement
   if (progress.level >= 2) {
@@ -147,7 +146,8 @@ export function updateAchievements(progress: UserProgress): Achievement[] {
   }
   
   // Perfect week achievement - only check when we have at least 7 days completed
-  if (completedDays >= 7) {
+  // This achievement is permanent once unlocked
+  if (completedDays >= 7 && !updatedAchievements[4].unlocked) {
     const hasWeekWithoutJokers = checkForWeekWithoutJokers(progress.days);
     if (hasWeekWithoutJokers) {
       updatedAchievements[4].unlocked = true;

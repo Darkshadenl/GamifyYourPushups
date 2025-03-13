@@ -38,29 +38,101 @@ export function useWorkoutProgress() {
         currentDayDate.setHours(0, 0, 0, 0);
         today.setHours(0, 0, 0, 0);
         
-        // If the date has changed and the current day is completed, move to next day
-        if (today.getTime() > currentDayDate.getTime() && currentDayData.completed) {
-          const nextDayData = getNextDay(loadedProgress);
-          nextDayData.date = today.toISOString().split('T')[0]; // Set today's date
+        // Calculate days difference
+        const daysDifference = Math.floor((today.getTime() - currentDayDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // If the date has changed
+        if (daysDifference > 0) {
+          // Case 1: Current day is completed - move to next day normally
+          if (currentDayData.completed) {
+            const nextDayData = getNextDay(loadedProgress);
+            nextDayData.date = today.toISOString().split('T')[0]; // Set today's date
+            
+            const updatedDays = [...loadedProgress.days, nextDayData];
+            loadedProgress.currentDay = nextDayData.day;
+            loadedProgress.days = updatedDays;
+            
+            saveUserProgress(loadedProgress);
+            
+            // Check for new achievements when automatically moving to next day
+            const updatedAchievements = updateAchievements(loadedProgress);
+            setAchievements(updatedAchievements);
+          } 
+          // Case 2: Current day is not completed - check if we can use a joker
+          else {
+            // Count available jokers (days where joker is not used)
+            const availableJokers = loadedProgress.days.filter(day => 
+              day.completed && !day.jokerUsed
+            ).length;
+            
+            if (availableJokers > 0) {
+              // Use a joker on the earliest completed day that hasn't used a joker
+              const jokerDay = loadedProgress.days.find(day => 
+                day.completed && !day.jokerUsed
+              );
+              
+              if (jokerDay) {
+                // Mark the joker as used
+                jokerDay.jokerUsed = true;
+                
+                // Mark the current day as completed with joker
+                currentDayData.completed = true;
+                currentDayData.jokerUsed = true;
+                
+                // Move to next day
+                const nextDayData = getNextDay(loadedProgress);
+                nextDayData.date = today.toISOString().split('T')[0]; // Set today's date
+                
+                const updatedDays = [...loadedProgress.days, nextDayData];
+                loadedProgress.currentDay = nextDayData.day;
+                loadedProgress.days = updatedDays;
+                
+                // Send notification about using a joker
+                notificationService.sendCustomNotification(
+                  'Streak Saved! 🃏',
+                  {
+                    body: 'We used one of your streak charges to maintain your streak.',
+                    requireInteraction: true
+                  }
+                );
+              }
+            } else {
+              // No jokers available - reset streak and level progress
+              loadedProgress.streak = 0;
+              loadedProgress.levelProgress = 0;
+              
+              // Keep the level the same
+              // But update the current day to be today's date
+              currentDayData.date = today.toISOString().split('T')[0];
+              
+              // Send notification about streak reset
+              notificationService.sendCustomNotification(
+                'Streak Reset 😢',
+                {
+                  body: 'Your streak has been reset because you missed a day and had no streak charges left.',
+                  requireInteraction: true
+                }
+              );
+            }
+            
+            saveUserProgress(loadedProgress);
+            
+            // Update achievements after streak changes
+            const updatedAchievements = updateAchievements(loadedProgress);
+            setAchievements(updatedAchievements);
+          }
           
-          const updatedDays = [...loadedProgress.days, nextDayData];
-          loadedProgress.currentDay = nextDayData.day;
-          loadedProgress.days = updatedDays;
-          
-          saveUserProgress(loadedProgress);
-          
-          // Check for new achievements when automatically moving to next day
-          const updatedAchievements = updateAchievements(loadedProgress);
-          setAchievements(updatedAchievements);
+          // Get current day after potential update
+          const updatedCurrentDay = loadedProgress.days.find(day => day.day === loadedProgress.currentDay);
+          setCurrentDay(updatedCurrentDay || null);
         } else {
           // Just load achievements without checking for new ones
           const currentAchievements = updateAchievements(loadedProgress);
           setAchievements(currentAchievements);
+          
+          // Set current day
+          setCurrentDay(currentDayData);
         }
-        
-        // Get current day after potential update
-        const updatedCurrentDay = loadedProgress.days.find(day => day.day === loadedProgress.currentDay);
-        setCurrentDay(updatedCurrentDay || null);
       }
     }
     
@@ -165,7 +237,9 @@ export function useWorkoutProgress() {
     const updatedDay = { 
       ...currentDay, 
       jokerUsed: !currentDay.jokerUsed,
-      completed: currentDay.jokerUsed ? currentDay.completed : false,
+      // When using a joker, mark the day as completed to maintain streak
+      // When removing a joker, reset completion status
+      completed: !currentDay.jokerUsed ? true : false,
       actual: currentDay.jokerUsed ? currentDay.actual : 0
     };
     
@@ -177,10 +251,22 @@ export function useWorkoutProgress() {
     );
     
     const updatedProgress = { ...progress, days: updatedDays };
+    
+    // Update streak if joker usage changed
+    if (updatedDay.jokerUsed !== currentDay.jokerUsed) {
+      if (updatedDay.jokerUsed) {
+        // Using a joker maintains the streak
+        // No need to change streak count
+      } else {
+        // Removing a joker might break the streak if the day is not completed
+        if (!updatedDay.completed) {
+          updatedProgress.streak = Math.max(0, progress.streak - 1);
+        }
+      }
+    }
+    
     setProgress(updatedProgress);
     saveUserProgress(updatedProgress);
-    
-    // No longer check for achievements here
   };
 
   /**
